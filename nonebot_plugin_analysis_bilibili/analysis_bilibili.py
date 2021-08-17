@@ -57,7 +57,7 @@ async def b23_extract(text):
         if re.match(r'^(av|bv|ep|ss)', b23[4], re.I):
             r = b23[4]
         else:
-            async with aiohttp.request('GET', f'https://bili2233.cn/{b23[4]}', timeout=aiohttp.client.ClientTimeout(10)) as resp:
+            async with aiohttp.request('GET', f'https://{b23[0]}', timeout=aiohttp.client.ClientTimeout(10)) as resp:
                 r = str(resp.url)
     except:
         r = text
