@@ -9,9 +9,8 @@ analysis_bili = on_regex("((?i)((b23.tv)|(bili(22|23|33|2233).cn)|(live.bilibili
 @analysis_bili.handle()
 async def analysis_main(bot: Bot, event: Event, state: dict):
     text = str(event.message).strip()
-    if re.match(r'(b23.tv)|(bili(22|23|33|2233).cn)', text, re.I):
-        # 提前处理短链接，避免解析到其他的
-        text = await b23_extract(text)
+    # 提前处理短链接，避免解析到其他的
+    text = await b23_extract(text)
     try:
         group_id = event.group_id
     except:

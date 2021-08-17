@@ -51,12 +51,16 @@ async def bili_keyword(group_id, text):
     return msg
 
 async def b23_extract(text):
-    b23 = re.compile(r'(b23.tv|bili(22|23|33|2233).cn)(\\)?/(\w+)').search(text)
-    if re.match(r'^(av|bv|ep|ss)', b23[1], re.I):
-        r = b23[1]
-    else:
-        async with aiohttp.request('GET', f'https://b23.tv/{b23[1]}', timeout=aiohttp.client.ClientTimeout(10)) as resp:
-            r = str(resp.url)
+    try:
+        b23 = re.compile(r'(b23.tv|bili(22|23|33|2233).cn)(\\)?/(\w+)', re.I).search(text)
+        r=""
+        if re.match(r'^(av|bv|ep|ss)', b23[4], re.I):
+            r = b23[4]
+        else:
+            async with aiohttp.request('GET', f'https://bili2233.cn/{b23[4]}', timeout=aiohttp.client.ClientTimeout(10)) as resp:
+                r = str(resp.url)
+    except:
+        r = text
     return r
 
 async def extract(text:str):
