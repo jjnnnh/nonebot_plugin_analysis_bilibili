@@ -68,21 +68,24 @@ async def b23_extract(text):
 
 async def extract(text:str):
     try:
+        getid = ""
         aid = re.compile(r'av(\d+)', re.I).search(text)
         bvid = re.compile(r'BV(\w){10}', re.I).search(text)
         epid = re.compile(r'ep(\d+)', re.I).search(text)
         ssid = re.compile(r'ss(\d+)', re.I).search(text)
         mdid = re.compile(r'md(\d+)', re.I).search(text)
         room_id = re.compile(r"live.bilibili.com/(blanc/|h5/)?(\d+)", re.I).search(text)
-        cvid = re.compile(r'(cv|/read/mobile(/|\?id=))(\d+)', re.I).search(text)
-        getid = ""
+        try:
+            cvid = re.compile(r'/read/mobile/(\d+)', re.I).search(text)[1]
+        except:
+            cvid = re.compile(r'(cv|/read/(mobile|native)\?id=)(\d+)', re.I).search(text)[3]
         if bvid:
             url = [f'https://api.bilibili.com/x/web-interface/view?bvid={bvid[0]}',f'https://www.biliplus.com/api/view?id={bvid[0]}']
         elif aid:
             url = [f'https://api.bilibili.com/x/web-interface/view?aid={aid[1]}',f'https://www.biliplus.com/api/view?id={aid[1]}']
         elif epid:
-            url = f'https://bangumi.bilibili.com/view/web_api/season?ep_id={epid[1]}'
-            getid = epid[0][2:]
+            getid = epid[1]
+            url = f'https://bangumi.bilibili.com/view/web_api/season?ep_id={getid}'
         elif ssid:
             url = f'https://bangumi.bilibili.com/view/web_api/season?season_id={ssid[1]}'
         elif mdid:
@@ -90,8 +93,8 @@ async def extract(text:str):
         elif room_id:
             url = f'https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={room_id[2]}'
         elif cvid:
-            url = f"https://api.bilibili.com/x/article/viewinfo?id={cvid[3]}&mobi_app=pc&from=web"
-            getid = cvid[3]
+            getid = cvid
+            url = f"https://api.bilibili.com/x/article/viewinfo?id={getid}&mobi_app=pc&from=web"
         return url,getid
     except:
         return None
