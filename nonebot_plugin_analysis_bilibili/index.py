@@ -51,10 +51,11 @@ async def bili_keyword(group_id, text):
     return msg
 
 async def b23_extract(text):
+    r = ""
     b23 = re.compile(r'((b23|acg).tv|bili(22|23|33|2233).cn)(\\)?/(\w+)', re.I).findall(text)
-    print(b23)
     if b23:
         b23 = b23[-1]
+        print(b23)
         if re.search(r'^acg.tv', b23[0], re.I):
             if re.search(r'^av', b23[-1]):
                 r = b23[-1]
@@ -63,8 +64,10 @@ async def b23_extract(text):
                 r = b23[-1]
             else:
                 async with aiohttp.request('GET', f'https://{b23[0]}/{b23[-1]}', timeout=aiohttp.client.ClientTimeout(10)) as resp:
-                    r = str(resp.url)
-    print(r)
+                    r = re.sub(r'\?(.*)','',str(resp.url))
+                    # 核查短链不跳转
+                    if re.compile(r'b23.tv|bili(22|23|33|2233).cn', re.I).findall(r):
+                        r = ""
     return r
 
 async def extract(text:str):
@@ -83,7 +86,7 @@ async def extract(text:str):
         if aid:
             url = [f'https://api.bilibili.com/x/web-interface/view?aid={aid[-1]}',f'https://www.biliplus.com/api/view?id={aid[-1]}']
         elif bvid:
-            url = [f'https://api.bilibili.com/x/web-interface/view?bvid={bvid[0]}',f'https://www.biliplus.com/api/view?id={bvid[0]}']
+            url = [f'https://api.bilibili.com/x/web-interface/view?bvid={bvid[-1]}',f'https://www.biliplus.com/api/view?id=BV{bvid[-1]}']
         elif epid:
             getid = epid[-1]
             url = f'https://bangumi.bilibili.com/view/web_api/season?ep_id={getid}'
@@ -271,11 +274,17 @@ async def bangumi_detail(url):
             msg = res['message']
             return msg, None
         res = res['result']
-        async with aiohttp.request('GET', f"https://api.bilibili.com/pgc/review/user?media_id={res['media_id']}") as resp:
-            xres = await resp.json()
-            xres = xres['result']['media']
-        title = f"{xres['title']}({xres['type_name']}·{xres['areas'][0]['name']})\n"
-        desc = f"{res['newest_ep']['desc']}\n"
+        desc = f"{res['newest_ep']['desc']}"
+        try:
+            async with aiohttp.request('GET', f"https://api.bilibili.com/pgc/review/user?media_id={res['media_id']}") as resp:
+                xres = await resp.json()
+                xres = xres['result']['media']
+                type_name = xres['type_name']
+                title = f"{xres['title']}({type_name}·{xres['areas'][0]['name']})\n"
+                desc += f" {xres['new_ep']['index_show']}\n"
+        except:
+            desc += "\n"
+            type_name = ""
         if "season_id" in url[0]:
             vurl = f"https://www.bilibili.com/bangumi/play/ss{res['season_id']}"
         elif "media_id" in url[0]:
@@ -286,7 +295,7 @@ async def bangumi_detail(url):
                 if i['ep_id'] == int(url[1]):
                     index = i['index']
                     if re.search(r"^(\d+)$", index, re.I):
-                        if xres['type_name'] in ("番剧","国创"):
+                        if type_name in ("番剧","国创"):
                             HJ="话"
                         else:
                             HJ="集"
@@ -295,7 +304,7 @@ async def bangumi_detail(url):
                         title += f"{index} - {i['index_title']}\n"
                     elif i['index']:
                         title += f"{index}\n"
-                    desc = f"投稿时间：{i['pub_real_time']}\n"
+                    desc = f"更新时间：{i['pub_real_time']}\n"
                     vurl += f"\n(av{i['aid']}·{i['bvid']})"
                     break
         style = ""
