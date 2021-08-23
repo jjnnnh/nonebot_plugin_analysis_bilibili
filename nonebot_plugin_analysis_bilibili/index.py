@@ -284,10 +284,17 @@ async def bangumi_detail(url):
             vurl = f"https://www.bilibili.com/bangumi/play/ep{url[1]}"
             for i in res['episodes']:
                 if i['ep_id'] == int(url[1]):
+                    index = i['index']
+                    if re.search(r"^(\d+)$", index, re.I):
+                        if xres['type_name'] in ("番剧","国创"):
+                            HJ="话"
+                        else:
+                            HJ="集"
+                        index = f"第{index}{HJ}"
                     if i['index_title']:
-                        title += f"{i['index']}. {i['index_title']}\n"
+                        title += f"{index} - {i['index_title']}\n"
                     elif i['index']:
-                        title += f"{i['index']}\n"
+                        title += f"{index}\n"
                     desc = f"投稿时间：{i['pub_real_time']}\n"
                     vurl += f"\n(av{i['aid']}·{i['bvid']})"
                     break
