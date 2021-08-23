@@ -13,7 +13,7 @@ async def analysis_main(bot: Bot, event: Event, state: dict):
     if re.search(r"((b23|acg).tv)|(bili(22|23|33|2233).cn)", text, re.I):
         text = await b23_extract(text)
     if text:
-        if re.search(r"av|bv|cv|ep|ss|md|bilibili.com/read/mobile|live.bilibili.com", text, re.I):
+        if re.search(r"(live.bilibili.com)|(bilibili.com/(video|read|bangumi))|(^(av|cv|ep|ss|md)(\d+))|(^BV([a-zA-Z0-9]){10})", text, re.I):
             try:
                 group_id = event.group_id
             except:

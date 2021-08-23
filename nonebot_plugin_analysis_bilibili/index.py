@@ -13,20 +13,6 @@ async def bili_keyword(group_id, text):
     try:
         # 提取url
         url = await extract(text)
-        # 如果是小程序就去搜索标题
-        if not url:
-            pattern = re.compile(r'"desc":".*?"')
-            desc = re.findall(pattern,text)
-            i = 0
-            while i < len(desc):
-                title_dict = "{"+desc[i]+"}"
-                title = eval(title_dict)
-                vurl = await search_bili_by_title(title['desc'])
-                if vurl:
-                    url = await extract(vurl)
-                    break
-                i += 1
-        
         # 获取视频详细信息
         if "bangumi" in url[0]:
             msg,vurl = await bangumi_detail(url)
@@ -63,11 +49,10 @@ async def b23_extract(text):
             if re.search(r'^(av|bv|ep|ss)', b23[-1]):
                 r = b23[-1]
             else:
-                async with aiohttp.request('GET', f'https://{b23[0]}/{b23[-1]}', timeout=aiohttp.client.ClientTimeout(10)) as resp:
-                    r = re.sub(r'\?(.*)','',str(resp.url))
-                    # 核查短链不跳转
-                    if re.compile(r'b23.tv|bili(22|23|33|2233).cn', re.I).findall(r):
-                        r = ""
+                b23 = f'https://{b23[0]}/{b23[-1]}'
+                async with aiohttp.request('GET', b23, timeout=aiohttp.client.ClientTimeout(10)) as resp:
+                    if str(resp.url) != b23:
+                        r = re.sub(r'\?(.*)','',str(resp.url))
     return r
 
 async def extract(text:str):
@@ -103,26 +88,6 @@ async def extract(text:str):
         return url,getid
     except:
         return None
-
-async def search_bili_by_title(title: str):
-    brackets_pattern = re.compile(r'[()\[\]{}（）【】]')
-    title_without_brackets = brackets_pattern.sub(' ', title).strip()
-    search_url = f'https://search.bilibili.com/video?keyword={urllib.parse.quote(title_without_brackets)}'
-
-    try:
-        async with aiohttp.request('GET', search_url, timeout=aiohttp.client.ClientTimeout(10)) as resp:
-            text = await resp.text(encoding='utf8')
-            content: lxml.html.HtmlElement = lxml.html.fromstring(text)
-    except asyncio.TimeoutError:
-        return None
-
-    for video in content.xpath('//li[@class="video-item matrix"]/a[@class="img-anchor"]'):
-        if title == ''.join(video.xpath('./attribute::title')):
-            url = ''.join(video.xpath('./attribute::href'))
-            break
-    else:
-        url = None
-    return url
 
 async def video_detail(url):
     try:
