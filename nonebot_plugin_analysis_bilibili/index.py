@@ -3,9 +3,9 @@ import json
 import aiohttp
 import asyncio
 import lxml.html
-import urllib.parse
 from datetime import datetime
 import traceback
+import base64
 
 analysis_stat = {}   # analysis_stat: video_url(vurl)
 
@@ -21,7 +21,7 @@ async def bili_keyword(group_id, text):
         elif "article" in url[0]:
             msg,vurl = await article_detail(url)
         else:
-            msg,vurl = await video_detail(url[0])
+            msg,vurl = await video_detail(url)
         
         # 避免多个机器人解析重复推送
         if group_id not in analysis_stat:
@@ -35,6 +35,26 @@ async def bili_keyword(group_id, text):
     except Exception as e:
         return
     return msg
+
+async def bili_url(text):
+    r = ""
+    get_url = re.compile(r'bilibili://(\w+)/(\w+)', re.I).findall(text)
+    if get_url:
+        get_url=get_url[-1]
+        if get_url[0] == "live" and get_url[-1]:
+            r = f"live.bilibili.com/{get_url[-1]}"
+        elif get_url[0] == "article" and get_url[-1]:
+            r = f"cv{get_url[-1]}"
+    if not r:
+        get_url = re.compile(r'bilibili://(.*)', re.I).findall(text)
+        print(get_url[-1])
+        try:
+            r = re.sub(r'\?(.*)','',str(base64.b64decode(get_url[-1]).decode("utf-8")))
+        except:
+            r = ""
+    else:
+        print(get_url)
+    return r
 
 async def b23_extract(text):
     r = ""
@@ -71,7 +91,8 @@ async def extract(text:str):
         if aid:
             url = [f'https://api.bilibili.com/x/web-interface/view?aid={aid[-1]}',f'https://www.biliplus.com/api/view?id={aid[-1]}']
         elif bvid:
-            url = [f'https://api.bilibili.com/x/web-interface/view?bvid={bvid[-1]}',f'https://www.biliplus.com/api/view?id=BV{bvid[-1]}']
+            getid = f"BV{bvid[-1]}"
+            url = [f'https://api.bilibili.com/x/web-interface/view?bvid={getid}',f'https://www.biliplus.com/api/view?id={getid}']
         elif epid:
             getid = epid[-1]
             url = f'https://bangumi.bilibili.com/view/web_api/season?ep_id={getid}'
@@ -91,7 +112,7 @@ async def extract(text:str):
 
 async def video_detail(url):
     try:
-        async with aiohttp.request('GET', url[0], timeout=aiohttp.client.ClientTimeout(10)) as resp:
+        async with aiohttp.request('GET', url[0][0], timeout=aiohttp.client.ClientTimeout(10)) as resp:
             res = await resp.json()
         if not res['code']:
             res = res['data']
@@ -147,7 +168,7 @@ async def video_detail(url):
             msg = f"{title}{RU}\n{CZTD}{TGSJFQ}{activity}{tag}{other}"
             return msg, f"https://www.bilibili.com/video/av{res['aid']}"
         elif res['message']=="啥都木有" or res['message']=="稿件不可见":
-            t = await video_detail2(url[1])
+            t = await video_detail2(url[0][1],url[1])
             if t=="获取失败，请稍后再试":
                 msg = t
             elif t in ["啥都木有","稿件不可见","请求错误"]:
@@ -159,7 +180,7 @@ async def video_detail(url):
         msg = f"视频解析出错--Error: {type(e)}"
         return msg, None
 
-async def video_detail2(url2):
+async def video_detail2(url2,vid):
     try:
         info=RU = ""
         async with aiohttp.request('GET', url2, timeout=aiohttp.client.ClientTimeout(10)) as resp:
@@ -216,18 +237,18 @@ async def video_detail2(url2):
                         ZHAV=f"av{areq['v2_app_api']['aid']}"
                 info = f"{ZHAV}\n{RU}\n{areq['v2_app_api']['title']}(共{areq['v2_app_api']['videos']}P){CZTD}\n投稿时间：{datetime.fromtimestamp(areq['v2_app_api']['pubdate']).strftime('%Y-%m-%d %H:%M:%S')}{TGFQ}{activity}{tag}"
             else:
-                if re.search(r'^(bv)', CXA, re.I):
-                    ZHAV=f"{CXA}\n→av{areq['id']}"
+                if re.search(r'^(bv)', vid, re.I):
+                    ZHAV=f"{vid}\n→av{areq['id']}"
                 else:
                     ZHAV=f"av{areq['id']}"
-                info = f"{ZHAV}\n{areq['title']}\nUP主：{areq['author']}(https://space.bilibili.com/{areq['mid']})\n投搞分区：{areq['typename']}"
+                info = f"{ZHAV}\n{areq['title']}\nUP主：{areq['author']}(https://space.bilibili.com/{areq['mid']})\n投搞时间：{datetime.fromtimestamp(areq['created']).strftime('%Y-%m-%d %H:%M:%S')}\n投搞分区：{areq['typename']}\n标签：{areq['tag']}"
         except:
-            #print(traceback.print_exc())
+            print(traceback.print_exc())
             pass
         if not info:
             info = areq['message']
     except:
-        #print(traceback.print_exc())
+        print(traceback.print_exc())
         info = "获取失败，请稍后再试"
     return info
 
