@@ -16,7 +16,7 @@ async def bili_keyword(group_id, text):
         # 获取视频详细信息
         if "bangumi" in url[0]:
             msg,vurl = await bangumi_detail(url)
-        elif "live.bilibili.com" in url[0]:
+        elif "live" in url[0]:
             msg,vurl = await live_detail(url[0])
         elif "article" in url[0]:
             msg,vurl = await article_detail(url)
@@ -43,7 +43,7 @@ async def bili_url(text):
         get_url=get_url[-1]
         if get_url[-1].isdigit():
             if get_url[0] == "live":
-                r = f"live.bilibili.com/{get_url[-1]}"
+                r = f"live.bilibili.com/h5/{get_url[-1]}"
             elif get_url[0] == "article":
                 r = f"cv{get_url[-1]}"
             elif get_url[0] == "video":
@@ -318,15 +318,21 @@ async def live_detail(url):
             msg = "直播间不存在"
             return msg, None
         uname = res['data']['anchor_info']['base_info']['uname']
+        short_id = res['data']['room_info']['short_id']
         room_id = res['data']['room_info']['room_id']
+        uid = res['data']['room_info']['uid']
         title = res['data']['room_info']['title']
         live_status = res['data']['room_info']['live_status']
         lock_status = res['data']['room_info']['lock_status']
         parent_area_name = res['data']['room_info']['parent_area_name']
         area_name = res['data']['room_info']['area_name']
+        parent_area_id = res['data']['room_info']['parent_area_id']
+        area_id = res['data']['room_info']['area_id']
         online = res['data']['room_info']['online']
         tags = res['data']['room_info']['tags']
         vurl = purl = f"https://live.bilibili.com/{room_id}"
+        if short_id:
+            purl += f" (短位号{short_id})";
         if lock_status:
             lock_time = res['data']['room_info']['lock_time']
             lock_time = datetime.fromtimestamp(lock_time).strftime("%Y-%m-%d %H:%M:%S")
@@ -336,11 +342,11 @@ async def live_detail(url):
             purl += f"\n独立播放器：https://www.bilibili.com/blackboard/live/live-activity-player.html?enterTheRoom=0&cid={room_id}"
         else:
             title = f"[轮播/闲置] {title}\n"
-        up = f"\n主播：{uname}\n当前分区："
-        if parent_area_name==area_name:
-            up += parent_area_name
+        up = f"\n主播：{uname} (https://space.bilibili.com/{uid})\n当前分区："
+        if parent_area_name == area_name:
+            up += f"{parent_area_name} (https://live.bilibili.com/p/eden/area-tags?parentAreaId={parent_area_id}&areaId={area_id})"
         else:
-            up += f"{parent_area_name}-{area_name}"
+            up += f"{parent_area_name} - {area_name} (https://live.bilibili.com/p/eden/area-tags?parentAreaId={parent_area_id}&areaId={area_id})"
         up += f"\n人气上一次刷新值：{online}"
         if tags:
             tags = f"\n标签：{tags}"

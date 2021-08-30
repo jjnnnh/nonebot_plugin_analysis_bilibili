@@ -15,11 +15,13 @@ async def analysis_main(bot: Bot, event: Event, state: dict):
     elif re.search(r"bilibili(://|%3A%2F%2F)", text, re.I):
         text = await bili_url(parse.unquote(text))
     if text:
-        if re.search(r"(live.bilibili.com)|(bilibili.com/(video|read|bangumi))|(^(av|cv|ep|ss|md)(\d+))|(^BV([a-zA-Z0-9]){10})", text, re.I):
-            try:
-                group_id = event.group_id
-            except:
-                group_id = f"i{event.user_id}"
+        try:
+            group_id = event.group_id
+        except:
+            group_id = f"i{event.user_id}"
+        if re.search(r"(live.bilibili.com/(blanc|h5))|(bilibili.com/(video|read|bangumi))|(^(av|cv|ep|ss|md)(\d+))|(^BV([a-zA-Z0-9]){10})", text, re.I):
+            msg = await bili_keyword(group_id, text)
+        elif str(group_id).startswith("i") and re.search(r"live.bilibili.com/", text, re.I):
             msg = await bili_keyword(group_id, text)
         else:
             print(text)
