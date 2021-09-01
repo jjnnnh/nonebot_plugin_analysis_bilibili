@@ -41,15 +41,15 @@ async def bili_url(text):
     get_url = re.compile(r'bilibili://(\w+)/(\w+)', re.I).findall(text)
     if get_url:
         get_url=get_url[-1]
-        if get_url[-1].isdigit():
+        if get_url[0] == "video" and re.search(r"^BV([a-zA-Z0-9]){10}", get_url[-1], re.I):
+            r = get_url[-1]
+        elif get_url[-1].isdigit():
             if get_url[0] == "live":
                 r = f"live.bilibili.com/h5/{get_url[-1]}"
             elif get_url[0] == "article":
                 r = f"cv{get_url[-1]}"
             elif get_url[0] == "video":
                 r = f"av{get_url[-1]}"
-        elif get_url[0] == "video" and re.search(r"^BV([a-zA-Z0-9]){10}", get_url[-1], re.I):
-            r = get_url[-1]
     if not r:
         get_url = re.compile(r'bilibili://(.*)', re.I).findall(text)
         print(get_url[-1])
@@ -93,11 +93,11 @@ async def extract(text:str):
         if not cvid and re.compile(r'/read/native\?id=(\d+)', re.I).findall(text):
             # app上专栏链接另外re
             cvid = re.compile(r'/read/native\?id=(\d+)', re.I).findall(text)
-        if aid:
-            url = [f'https://api.bilibili.com/x/web-interface/view?aid={aid[-1]}',f'https://www.biliplus.com/api/view?id={aid[-1]}']
-        elif bvid:
+        if bvid:
             getid = f"BV{bvid[-1]}"
             url = [f'https://api.bilibili.com/x/web-interface/view?bvid={getid}',f'https://www.biliplus.com/api/view?id={getid}']
+        elif aid:
+            url = [f'https://api.bilibili.com/x/web-interface/view?aid={aid[-1]}',f'https://www.biliplus.com/api/view?id={aid[-1]}']
         elif epid:
             getid = epid[-1]
             url = f'https://bangumi.bilibili.com/view/web_api/season?ep_id={getid}'
