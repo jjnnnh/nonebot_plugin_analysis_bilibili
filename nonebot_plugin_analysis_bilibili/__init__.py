@@ -19,6 +19,7 @@ async def analysis_main(bot: Bot, event: Event, state: dict):
             group_id = event.group_id
         except:
             group_id = f"i{event.user_id}"
+        text = re.sub(r'(?i)live.bilibili.com','live.bilibili.com', text)
         if re.search(r"(live.bilibili.com/(blanc|h5))|(bilibili.com/(video|read|bangumi))|(^(av|cv|ep|ss|md)(\d+))|(^BV([a-zA-Z0-9]){10})", text, re.I):
             msg = await bili_keyword(group_id, text)
         elif str(group_id).startswith("i") and re.search(r"live.bilibili.com/", text, re.I):
@@ -26,7 +27,4 @@ async def analysis_main(bot: Bot, event: Event, state: dict):
         else:
             print(text)
     if msg:
-        try:
-            await analysis_bili.send(msg)
-        except:
-            pass
+        await analysis_bili.finish(msg)

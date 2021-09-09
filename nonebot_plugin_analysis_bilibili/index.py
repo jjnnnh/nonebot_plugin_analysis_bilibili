@@ -38,10 +38,10 @@ async def bili_keyword(group_id, text):
 
 async def bili_url(text):
     r = ""
-    get_url = re.compile(r'bilibili://(\w+)/(\w+)', re.I).findall(text)
+    get_url = re.compile(r'bilibili://(\w+)/(\w+)').findall(text)
     if get_url:
         get_url=get_url[-1]
-        if get_url[0] == "video" and re.search(r"^BV([a-zA-Z0-9]){10}", get_url[-1], re.I):
+        if get_url[0] == "video" and re.search(r"^BV([a-zA-Z0-9]){10}", get_url[-1]):
             r = get_url[-1]
         elif get_url[-1].isdigit():
             if get_url[0] == "live":
@@ -51,10 +51,12 @@ async def bili_url(text):
             elif get_url[0] == "video":
                 r = f"av{get_url[-1]}"
     if not r:
-        get_url = re.compile(r'bilibili://(.*)', re.I).findall(text)
+        get_url = re.compile(r'bilibili://(.*)').findall(text)
         print(get_url[-1])
         try:
             r = re.sub(r'\?(.*)','',str(base64.b64decode(get_url[-1]).decode("utf-8")))
+            r = re.sub(r'live.bilibili.com/','live.bilibili.com/h5/',r)
+            print(r)
         except:
             r = ""
     else:
@@ -71,13 +73,15 @@ async def b23_extract(text):
             if re.search(r'^av', b23[-1]):
                 r = b23[-1]
         else:
-            if re.search(r'^(av|bv|ep|ss)', b23[-1]):
+            if re.search(r'^(av|BV|ep|ss)', b23[-1]):
                 r = b23[-1]
             else:
                 b23 = f'https://{b23[0]}/{b23[-1]}'
                 async with aiohttp.request('GET', b23, timeout=aiohttp.client.ClientTimeout(10)) as resp:
                     if str(resp.url) != b23:
                         r = re.sub(r'\?(.*)','',str(resp.url))
+                        r = re.sub(r'live.bilibili.com/','live.bilibili.com/h5/',r)
+                        print(r)
     return r
 
 async def extract(text:str):
@@ -88,11 +92,11 @@ async def extract(text:str):
         epid = re.compile(r'ep(\d+)', re.I).findall(text)
         ssid = re.compile(r'ss(\d+)', re.I).findall(text)
         mdid = re.compile(r'md(\d+)', re.I).findall(text)
-        roomid = re.compile(r"live.bilibili.com/(blanc/|h5/)?(\d+)", re.I).findall(text)
-        cvid = re.compile(r'(cv|/read/mobile(/|\?id=))(\d+)', re.I).findall(text)
-        if not cvid and re.compile(r'/read/native\?id=(\d+)', re.I).findall(text):
-            # app上专栏链接另外re
-            cvid = re.compile(r'/read/native\?id=(\d+)', re.I).findall(text)
+        roomid = re.compile(r"live.bilibili.com/(blanc/|h5/)?(\d+)").findall(text)
+        cvid = re.compile(r'cv(\d+)', re.I).findall(text)
+        if not cvid and re.compile(r'((/read/native\?id=)|(/read/mobile(/|\?id=)))(\d+)').findall(text):
+            # app和爪机网页上专栏链接re
+            cvid = re.compile(r'((/read/native\?id=)|(/read/mobile(/|\?id=)))(\d+)').findall(text)[-1]
         if bvid:
             getid = f"BV{bvid[-1]}"
             url = [f'https://api.bilibili.com/x/web-interface/view?bvid={getid}',f'https://www.biliplus.com/api/view?id={getid}']
@@ -108,7 +112,7 @@ async def extract(text:str):
         elif roomid:
             url = f'https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={roomid[-1][-1]}'
         elif cvid:
-            getid = cvid[-1][-1]
+            getid = cvid[-1]
             url = f"https://api.bilibili.com/x/article/viewinfo?id={getid}&mobi_app=pc&from=web"
         print(url)
         return url,getid
@@ -190,6 +194,7 @@ async def video_detail2(url2,vid):
         info=RU = ""
         async with aiohttp.request('GET', url2, timeout=aiohttp.client.ClientTimeout(10)) as resp:
             areq = await resp.json()
+            print(areq)
         try:
             if areq['v2_app_api']['redirect_url']:
                 RU = f"{areq['v2_app_api']['redirect_url'].replace('https://www.bilibili.com/bangumi/play/', '')}\n"
