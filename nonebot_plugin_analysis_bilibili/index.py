@@ -93,10 +93,11 @@ async def extract(text:str):
         ssid = re.compile(r'ss(\d+)', re.I).findall(text)
         mdid = re.compile(r'md(\d+)', re.I).findall(text)
         roomid = re.compile(r"live.bilibili.com/(blanc/|h5/)?(\d+)").findall(text)
-        cvid = re.compile(r'cv(\d+)', re.I).findall(text)
-        if not cvid and re.compile(r'((/read/native\?id=)|(/read/mobile(/|\?id=)))(\d+)').findall(text):
-            # app和爪机网页上专栏链接re
-            cvid = re.compile(r'((/read/native\?id=)|(/read/mobile(/|\?id=)))(\d+)').findall(text)[-1]
+        cvid = re.compile(r'/read/((native\?id=)|(mobile(/|\?id=)))(\d+)').findall(text)
+        if not cvid:
+            cvid = re.compile(r'cv(\d+)', re.I).findall(text)
+        else:
+            cvid = cvid[-1]
         if bvid:
             getid = f"BV{bvid[-1]}"
             url = [f'https://api.bilibili.com/x/web-interface/view?bvid={getid}',f'https://www.biliplus.com/api/view?id={getid}']
